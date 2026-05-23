@@ -12,16 +12,17 @@
         button { padding: 12px 25px; background: #fe2c55; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; width: 90%; transition: 0.2s; }
         button:hover { background: #e11d43; }
         #result { margin-top: 25px; }
-        .download-btn { background: #25a156; }
+        .download-btn { background: #25a156; margin-top: 10px; }
         .download-btn:hover { background: #1e8445; }
         .loader { color: #888; font-style: italic; }
+        .info-text { font-size: 12px; color: #666; margin-top: 10px; line-height: 1.4; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h2>Скачать TikTok Видео</h2>
-        <p style="color: #888; font-size: 14px;">Сервис работает напрямую через GitHub Pages</p>
+        <p style="color: #888; font-size: 14px;">Исправленная версия с CORS-прокси</p>
         
         <input type="text" id="tiktokUrl" placeholder="Вставьте ссылку на видео (https://...)">
         <br>
@@ -40,35 +41,40 @@
                 return;
             }
             
-            resultDiv.innerHTML = '<p class="loader">Ищем видео на серверах TikTok...</p>';
+            resultDiv.innerHTML = '<p class="loader">Подключаемся через прокси к серверам TikTok...</p>';
             
             try {
-                // Прямой запрос к публичному API TikWM из браузера
-                const apiUrl = `https://tikwm.com{encodeURIComponent(url)}`;
-                const response = await fetch(apiUrl);
+                // Базовый адрес API скачивания
+                const targetApi = `https://tikwm.com{encodeURIComponent(url)}`;
+                
+                // Пропускаем запрос через corsproxy.io для обхода ошибки сети
+                const proxyUrl = `https://corsproxy.io{encodeURIComponent(targetApi)}`;
+                
+                const response = await fetch(proxyUrl);
                 const json = await response.json();
                 
                 if (json && json.data && json.data.play) {
                     const videoUrl = json.data.play;
                     const title = json.data.title || 'tiktok_video';
                     
-                    // Выводим кнопку для скачивания
+                    // Формируем блок с результатом
                     resultDiv.innerHTML = `
-                        <p style="color: #25a156;">✔ Видео успешно найдено!</p>
+                        <p style="color: #25a156; font-weight: bold;">✔ Видео успешно обработано!</p>
                         <p style="font-size:14px; color:#aaa; margin-bottom:15px;">${title}</p>
                         <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">
-                            <button class="button download-btn">Открыть и сохранить видео</button>
+                            <button class="download-btn">Открыть видеофайл</button>
                         </a>
-                        <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                            Если видео открылось в плеере, нажмите три точки в углу -> "Скачать"
+                        <p class="info-text">
+                            Инструкция: Ссылка откроется в новой вкладке. <br>
+                            Нажмите <strong>три точки в правом нижнем углу</strong> видеоплеера и выберите <strong>"Скачать"</strong>.
                         </p>
                     `;
                 } else {
-                    resultDiv.innerHTML = `<p style="color:#fe2c55;">Ошибка: ${json.msg || 'Не удалось распознать ссылку'}</p>`;
+                    resultDiv.innerHTML = `<p style="color:#fe2c55;">Ошибка API: ${json.msg || 'Не удалось распознать ссылку'}</p>`;
                 }
             } catch (err) {
                 console.error(err);
-                resultDiv.innerHTML = '<p style="color:#fe2c55;">Произошла ошибка сети. Попробуйте еще раз.</p>';
+                resultDiv.innerHTML = '<p style="color:#fe2c55;">Произошла ошибка соединения. Попробуйте еще раз.</p>';
             }
         }
     </script>
