@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Downloader via GitHub</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background: #121212; color: #fff; }
+        .container { max-width: 500px; margin: 0 auto; background: #1e1e1e; padding: 30px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        input { width: 85%; padding: 12px; margin-bottom: 20px; border: 1px solid #333; border-radius: 8px; background: #2d2d2d; color: #fff; font-size: 16px; }
+        input:focus { outline: none; border-color: #fe2c55; }
+        button { padding: 12px 25px; background: #fe2c55; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; width: 90%; transition: 0.2s; }
+        button:hover { background: #e11d43; }
+        #result { margin-top: 25px; }
+        .download-btn { background: #25a156; }
+        .download-btn:hover { background: #1e8445; }
+        .loader { color: #888; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Скачать TikTok Видео</h2>
+        <p style="color: #888; font-size: 14px;">Сервис работает напрямую через GitHub Pages</p>
+        
+        <input type="text" id="tiktokUrl" placeholder="Вставьте ссылку на видео (https://...)">
+        <br>
+        <button onclick="downloadVideo()">Получить ссылку</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function downloadVideo() {
+            const url = document.getElementById('tiktokUrl').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            if (!url) {
+                alert('Пожалуйста, вставьте ссылку!');
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p class="loader">Ищем видео на серверах TikTok...</p>';
+            
+            try {
+                // Прямой запрос к публичному API TikWM из браузера
+                const apiUrl = `https://tikwm.com{encodeURIComponent(url)}`;
+                const response = await fetch(apiUrl);
+                const json = await response.json();
+                
+                if (json && json.data && json.data.play) {
+                    const videoUrl = json.data.play;
+                    const title = json.data.title || 'tiktok_video';
+                    
+                    // Выводим кнопку для скачивания
+                    resultDiv.innerHTML = `
+                        <p style="color: #25a156;">✔ Видео успешно найдено!</p>
+                        <p style="font-size:14px; color:#aaa; margin-bottom:15px;">${title}</p>
+                        <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">
+                            <button class="button download-btn">Открыть и сохранить видео</button>
+                        </a>
+                        <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                            Если видео открылось в плеере, нажмите три точки в углу -> "Скачать"
+                        </p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p style="color:#fe2c55;">Ошибка: ${json.msg || 'Не удалось распознать ссылку'}</p>`;
+                }
+            } catch (err) {
+                console.error(err);
+                resultDiv.innerHTML = '<p style="color:#fe2c55;">Произошла ошибка сети. Попробуйте еще раз.</p>';
+            }
+        }
+    </script>
+
+</body>
+</html>
