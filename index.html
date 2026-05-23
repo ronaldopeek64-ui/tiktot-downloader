@@ -3,78 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Downloader via GitHub</title>
+    <title>Отправка кода на почту</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background: #121212; color: #fff; }
-        .container { max-width: 500px; margin: 0 auto; background: #1e1e1e; padding: 30px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-        input { width: 85%; padding: 12px; margin-bottom: 20px; border: 1px solid #333; border-radius: 8px; background: #2d2d2d; color: #fff; font-size: 16px; }
-        input:focus { outline: none; border-color: #fe2c55; }
-        button { padding: 12px 25px; background: #fe2c55; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; width: 90%; transition: 0.2s; }
-        button:hover { background: #e11d43; }
-        #result { margin-top: 25px; }
-        .download-btn { background: #25a156; margin-top: 10px; }
-        .download-btn:hover { background: #1e8445; }
-        .loader { color: #888; font-style: italic; }
-        .info-text { font-size: 12px; color: #666; margin-top: 10px; line-height: 1.4; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 50px; background: #121212; color: #fff; }
+        .container { max-width: 400px; margin: 0 auto; background: #1e1e1e; padding: 30px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        input { width: 85%; padding: 12px; margin-bottom: 20px; border: 1px solid #333; border-radius: 8px; background: #2d2d2d; color: #fff; font-size: 16px; text-align: center; }
+        button { padding: 12px 25px; background: #0070f3; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; width: 90%; transition: 0.2s; }
+        button:hover { background: #0051a8; }
+        #status { margin-top: 20px; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>Скачать TikTok Видео</h2>
-        <p style="color: #888; font-size: 14px;">Исправленная версия с CORS-прокси</p>
+        <h2>Верификация по Email</h2>
+        <p style="color: #888; font-size: 14px; margin-bottom: 20px;">Введите ваш Email, чтобы получить секретный код</p>
         
-        <input type="text" id="tiktokUrl" placeholder="Вставьте ссылку на видео (https://...)">
+        <input type="email" id="emailInput" placeholder="example@mail.ru">
         <br>
-        <button onclick="downloadVideo()">Получить ссылку</button>
+        <button onclick="sendCode()">Отправить код</button>
         
-        <div id="result"></div>
+        <div id="status"></div>
     </div>
 
     <script>
-        async function downloadVideo() {
-            const url = document.getElementById('tiktokUrl').value.trim();
-            const resultDiv = document.getElementById('result');
+        async function sendCode() {
+            const email = document.getElementById('emailInput').value.trim();
+            const statusDiv = document.getElementById('status');
             
-            if (!url) {
-                alert('Пожалуйста, вставьте ссылку!');
-                return;
-            }
+            if (!email) return alert('Введите адрес почты!');
             
-            resultDiv.innerHTML = '<p class="loader">Подключаемся через прокси к серверам TikTok...</p>';
+            statusDiv.innerHTML = '<span style="color: #aaa;">Отправка...</span>';
             
             try {
-                // Базовый адрес API скачивания
-                const targetApi = `https://tikwm.com{encodeURIComponent(url)}`;
+                const response = await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
                 
-                // Пропускаем запрос через corsproxy.io для обхода ошибки сети
-                const proxyUrl = `https://corsproxy.io{encodeURIComponent(targetApi)}`;
+                const data = await response.json();
                 
-                const response = await fetch(proxyUrl);
-                const json = await response.json();
-                
-                if (json && json.data && json.data.play) {
-                    const videoUrl = json.data.play;
-                    const title = json.data.title || 'tiktok_video';
-                    
-                    // Формируем блок с результатом
-                    resultDiv.innerHTML = `
-                        <p style="color: #25a156; font-weight: bold;">✔ Видео успешно обработано!</p>
-                        <p style="font-size:14px; color:#aaa; margin-bottom:15px;">${title}</p>
-                        <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">
-                            <button class="download-btn">Открыть видеофайл</button>
-                        </a>
-                        <p class="info-text">
-                            Инструкция: Ссылка откроется в новой вкладке. <br>
-                            Нажмите <strong>три точки в правом нижнем углу</strong> видеоплеера и выберите <strong>"Скачать"</strong>.
-                        </p>
-                    `;
+                if (data.success) {
+                    statusDiv.innerHTML = `<span style="color: #25a156; font-weight: bold;">✔ Код успешно отправлен на ${email}!</span>`;
                 } else {
-                    resultDiv.innerHTML = `<p style="color:#fe2c55;">Ошибка API: ${json.msg || 'Не удалось распознать ссылку'}</p>`;
+                    statusDiv.innerHTML = `<span style="color: #fe2c55;">Ошибка: ${data.message}</span>`;
                 }
             } catch (err) {
-                console.error(err);
-                resultDiv.innerHTML = '<p style="color:#fe2c55;">Произошла ошибка соединения. Попробуйте еще раз.</p>';
+                statusDiv.innerHTML = '<span style="color: #fe2c55;">Ошибка соединения с сервером.</span>';
             }
         }
     </script>
